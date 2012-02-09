@@ -36,11 +36,11 @@ class ClientLoginResolver extends GDataAuthResolver {
 
     @Override
     def afterSpreadsheetRequest() {
-        docsService.userToken = spreadsToken
+        docsService.userToken = docsToken.value
     }
 
     @Override
     def beforeSpreadsheetRequest() {
-        docsService.userToken = docsToken
+        docsService.userToken = spreadsToken.value
     }
 }

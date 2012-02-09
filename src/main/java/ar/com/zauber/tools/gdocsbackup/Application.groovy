@@ -3,7 +3,7 @@
  */
 package ar.com.zauber.tools.gdocsbackup
 
-import com.google.gdata.client.docs.DocsService
+import ar.com.zauber.tools.gdocsbackup.auth.ClientLoginResolver
 
 
 
@@ -16,20 +16,11 @@ import com.google.gdata.client.docs.DocsService
  * @since Feb 8, 2012
  */
 public class Application {
-    private static DocsService client;
-
     public static void main(final String[] args) throws Exception {
-        //        def cli = new CliBuilder(usage:'ls')
-        //        cli.a('display all files')
-        //        cli.l(X'use a long listing format')
-        //        cli.t('sort by modification time')
-        //        def options = cli.parse(args)
+        def resolver = new ClientLoginResolver("zaubertest.test@gmail.com", "zaubertesteando", "")
 
+        def backup = new GoogleDocsUserBackup(false, resolver, "./zaubertest.test")
+
+        backup.sync()
     }
-
-
-
-
-
-
 }
