@@ -3,8 +3,11 @@
  */
 package ar.com.zauber.tools.gdocsbackup.auth
 
+import java.util.Map
+
 import com.google.gdata.client.authn.oauth.GoogleOAuthParameters
 import com.google.gdata.client.authn.oauth.OAuthHmacSha1Signer
+import com.google.gdata.client.authn.oauth.OAuthParameters.OAuthType
 
 /**
  * TODO: Description of the class, Comments in english by default
@@ -28,6 +31,7 @@ class OAuthResolver extends GDataAuthResolver {
         GoogleOAuthParameters oauthParameters = new GoogleOAuthParameters()
         oauthParameters.setOAuthConsumerKey    consumer_key
         oauthParameters.setOAuthConsumerSecret consumer_secret
+        oauthParameters.setOAuthType OAuthType.TWO_LEGGED_OAUTH
 
         docsService.setOAuthCredentials(oauthParameters, new OAuthHmacSha1Signer())
     }
@@ -35,5 +39,10 @@ class OAuthResolver extends GDataAuthResolver {
     @Override
     String getOwner() {
         requestor_id
+    }
+
+    @Override
+    Map getExtraURLParams() {
+        [xoauth_requestor_id:requestor_id]
     }
 }

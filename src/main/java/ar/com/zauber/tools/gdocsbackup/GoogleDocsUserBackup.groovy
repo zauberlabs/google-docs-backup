@@ -113,10 +113,13 @@ class GoogleDocsUserBackup {
     void doBackup() {
         this.resolver.loadCredentials()
 
-        final DocumentQuery query = new DocumentQuery(new URL("https://docs.google.com/feeds/default/private/full"))
+
+        URIBuilder builder = new URIBuilder("https://docs.google.com/feeds/default/private/full")
+                                .addQueryParams(resolver.extraURLParams)
+        final DocumentQuery query = new DocumentQuery(new URL(builder.toString()))
 
 
-
+        println builder.toString()
         // Get Everything
         def allEntries = new DocumentListFeed()
         DocumentListFeed tempFeed = client.getFeed(query, DocumentListFeed.class)
@@ -207,7 +210,7 @@ class GoogleDocsUserBackup {
                     break;
                 case "spreadsheet":
                     resolver.beforeSpreadsheetRequest()
-                    exportUrl = new URIBuilder(googleDocsURL(resourceType)).addQueryParams([key: docId, exportFormat: fileExtension]).toString()
+                    exportUrl = new URIBuilder(googleDocsURL(resourceType)).addQueryParams([key: docId, exportFormat: fileExtension] + resolver.extraURLParams).toString()
                     try {
                         downloadFile(exportUrl, fileName)
                     } catch (Exception) {
@@ -216,7 +219,7 @@ class GoogleDocsUserBackup {
                     resolver.afterSpreadsheetRequest()
                     break;
                 default:
-                    exportUrl = new URIBuilder(googleDocsURL(resourceType)).addQueryParams([docId: docId, exportFormat: fileExtension]).toString()
+                    exportUrl = new URIBuilder(googleDocsURL(resourceType)).addQueryParams([docId: docId, exportFormat: fileExtension] + resolver.extraURLParams).toString()
                     try {
                         downloadFile(exportUrl, fileName)
                     } catch (Exception) {

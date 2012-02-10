@@ -33,4 +33,6 @@ abstract class GDataAuthResolver {
     def afterSpreadsheetRequest() {}
 
     abstract String getOwner()
+
+    Map getExtraURLParams() { [:] }
 }
