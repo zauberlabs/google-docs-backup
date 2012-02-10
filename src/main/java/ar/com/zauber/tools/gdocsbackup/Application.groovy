@@ -25,7 +25,7 @@ public class Application {
 
 
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         def app_name = "zauber-gdatabackup"
 
@@ -48,8 +48,6 @@ public class Application {
         }
         def options = cli.parse(args)
 
-        println options.email
-
         def resolvers
 
         if (!options.oauth) {
@@ -66,7 +64,6 @@ public class Application {
                 password = System.console().readPassword().toString()
             }
 
-            println "Login with ${options.email}"
             resolvers = [ new ClientLoginResolver(options.email, password, "") ]
         } else {
             if (options.all_domain) {
@@ -98,6 +95,7 @@ public class Application {
         if (outputPath == null || outputPath == "false") {
             outputPath = "./backup";
         }
+
 
         resolvers.each { GDataAuthResolver resolver ->
             try {
