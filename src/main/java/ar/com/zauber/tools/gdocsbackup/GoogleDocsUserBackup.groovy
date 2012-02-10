@@ -4,10 +4,13 @@
 package ar.com.zauber.tools.gdocsbackup
 
 import groovyx.net.http.URIBuilder
+
+import org.apache.commons.codec.digest.DigestUtils
+
 import ar.com.zauber.tools.gdocsbackup.auth.GDataAuthResolver
 
 import com.google.api.client.testing.json.AbstractJsonParserTest.E
-import com.google.api.client.util.Base64
+import com.google.common.io.Files
 import com.google.gdata.client.DocumentQuery
 import com.google.gdata.client.docs.DocsService
 import com.google.gdata.data.DateTime
@@ -16,6 +19,7 @@ import com.google.gdata.data.MediaContent
 import com.google.gdata.data.docs.DocumentListEntry
 import com.google.gdata.data.docs.DocumentListFeed
 import com.google.gdata.data.media.MediaSource
+
 
 
 
@@ -38,11 +42,15 @@ class GoogleDocsUserBackup {
 
     FileOutputStreamFactory fileFactory = new FileOutputStreamFactory()
 
-    private static final def shortenedHash = { byte[] hash ->
+    private static final def folderizeEmail = { String email ->
+        email.replaceAll("@","_at_")
+    }
+
+    private static final def shortenedHash = { String hash ->
         StringBuilder builder = new StringBuilder();
         int i = 0;
         for(char c in hash) {
-            if (i % 16 == 0) {
+            if (i % 8 == 0) {
                 builder.append(c)
             }
             i++;
@@ -51,8 +59,8 @@ class GoogleDocsUserBackup {
     }
 
     private static final def safeFileName = { String path,
-        String resourceName, String resourceId, String resourceFormat ->
-        "${path}/${resourceName.replaceAll("/","")}-${resourceId}.${resourceFormat}"
+        String resourceName, String hashedId, String resourceFormat ->
+        "${path}/${resourceName.replaceAll("/","")}-${hashedId}.${resourceFormat}"
     }
 
     private static final def googleDocsURL = { resourceType ->
@@ -89,16 +97,25 @@ class GoogleDocsUserBackup {
             this.mediaTypes = [
                         document: "doc",
                         spreadsheet: "xls",
-                        presentation: "ppt"
+                        presentation: "ppt",
+                        pdf: "pdf"
                     ]
         }
         this.savePath = savePath
+
+        File path = new File("${this.savePath}/data/")
+
+        if (!path.exists()) {
+            path.mkdirs()
+        }
     }
 
-    void sync() {
+    void doBackup() {
         this.resolver.loadCredentials()
 
         final DocumentQuery query = new DocumentQuery(new URL("https://docs.google.com/feeds/default/private/full"))
+
+
 
         // Get Everything
         def allEntries = new DocumentListFeed()
@@ -117,39 +134,70 @@ class GoogleDocsUserBackup {
 
         System.out.println("User has " + allEntries.entries.size() + " total entries")
         for (entry in allEntries.entries) {
-            updateEntry entry
+            String file = backupEntry entry
+
+            File tmp = new File(file);
+
+            if (tmp.exists()) {
+
+                File folder = new File("${savePath}/${folderizeEmail(resolver.owner)}")
+                if (!folder.exists()) {
+                    folder.mkdirs()
+                }
+
+                String hashedId = DigestUtils.shaHex(entry.resourceId)
+
+                File target = new File("${savePath}/data/${hashedId[0..1]}/${hashedId[2..-1]}")
+
+                Files.copy(tmp, target)
+                Runtime.runtime.exec("ln -s ${target.absolutePath} ${savePath}/${folderizeEmail(resolver.owner)}/${tmp.name}")
+
+            }
+            tmp.delete();
         }
 
     }
 
-    private void updateEntry(DocumentListEntry entry) {
+    private String backupEntry(DocumentListEntry entry) {
 
         String resourceId    = entry.resourceId
         String resourceType  = resourceId.substring(0, resourceId.lastIndexOf(":"))
         String docId         = resourceId.substring(resourceId.lastIndexOf(":") + 1)
         String fileExtension = mediaTypes[resourceType]
-        String hashedId = shortenedHash(Base64.encode(entry.resourceId.getBytes()))
-        String fileName = safeFileName(savePath, entry.title.plainText, hashedId, fileExtension)
-
 
         if (fileExtension == null) {
             if (entry.title.plainText.lastIndexOf(".") != -1) {
                 fileExtension = entry.title.plainText.substring(entry.title.plainText.lastIndexOf(".") + 1)
+            }
+            if (!fileExtension && resourceType == "drawing") {
+                fileExtension = "png"
             }
             if (!fileExtension) {
                 fileExtension = entry.content.mimeType.subType
             }
         }
 
+
+        String hashedId = DigestUtils.shaHex(entry.resourceId)
+        String hashedIdShorted = shortenedHash(hashedId)
+
+
+        String fileName = safeFileName(savePath, entry.title.plainText, hashedIdShorted, fileExtension)
+
         DateTime remoteDate = entry.edited
 
-        File localFile = new File(fileName)
+        File dir = new File("${savePath}/data/${hashedId[0..1]}/")
+
+        if (!dir.exists()) {
+            dir.mkdir();
+        }
+
+        File localFile = new File("${savePath}/data/${hashedId[0..1]}/${hashedId[2..-1]}")
 
         boolean exists = localFile.exists()
 
-
-
         long localDate = localFile.lastModified()
+
         if (!exists || localDate < remoteDate.value || download) {
             println "Downloading ${fileName}"
             String exportUrl
@@ -179,6 +227,7 @@ class GoogleDocsUserBackup {
         } else {
             println "Skipping already downloaded file ${fileName}"
         }
+        fileName
     }
 
 

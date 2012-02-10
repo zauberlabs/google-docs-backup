@@ -108,7 +108,7 @@ class GoogleDocsUserBackupTest extends Specification {
         when:
             def userBackup = new GoogleDocsUserBackup(true, clientLogin, ".")
             userBackup.fileFactory = mockFactory
-            userBackup.sync()
+            userBackup.doBackup()
         then:
             1 * clientLogin.loadCredentials()
             1 * clientLogin.beforeSpreadsheetRequest()

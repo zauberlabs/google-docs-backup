@@ -43,4 +43,9 @@ class ClientLoginResolver extends GDataAuthResolver {
     def beforeSpreadsheetRequest() {
         docsService.userToken = spreadsToken.value
     }
+
+    @Override
+    String getOwner() {
+        username
+    }
 }

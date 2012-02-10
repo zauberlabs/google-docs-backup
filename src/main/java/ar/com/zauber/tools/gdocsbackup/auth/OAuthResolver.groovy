@@ -14,12 +14,13 @@ import com.google.gdata.client.authn.oauth.OAuthHmacSha1Signer
  * @since Feb 8, 2012
  */
 class OAuthResolver extends GDataAuthResolver {
-    String consumer_key, consumer_secret
+    String consumer_key, consumer_secret, requestor_id
 
-    public OAuthResolver(String consumer_key, String consumer_secret, String appName) {
+    public OAuthResolver(String consumer_key, String consumer_secret, String appName, String requestor_id) {
         super(appName)
         this.consumer_key    = consumer_key
         this.consumer_secret = consumer_secret
+        this.requestor_id = requestor_id
     }
 
 
@@ -29,5 +30,10 @@ class OAuthResolver extends GDataAuthResolver {
         oauthParameters.setOAuthConsumerSecret consumer_secret
 
         docsService.setOAuthCredentials(oauthParameters, new OAuthHmacSha1Signer())
+    }
+
+    @Override
+    String getOwner() {
+        requestor_id
     }
 }

@@ -31,4 +31,6 @@ abstract class GDataAuthResolver {
     def beforeSpreadsheetRequest() {}
 
     def afterSpreadsheetRequest() {}
+
+    abstract String getOwner()
 }
